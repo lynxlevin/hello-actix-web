@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.8.0"
+
+[dev-dependencies]
+cargo-watch = "8.5.2"

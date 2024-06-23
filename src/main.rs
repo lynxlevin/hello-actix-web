@@ -37,6 +37,10 @@ async fn mutable_counter(data: web::Data<MutableState>) -> String {
     format!("Request number: {counter}")
 }
 
+fn mutable_state_config(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::scope("/shared-mutable-state2").service(mutable_counter));
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let counter = web::Data::new(MutableState {
@@ -54,6 +58,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::scope("/app").service(echo))
             .route("/hey", web::get().to(manual_hello))
             .service(web::scope("/shared-mutable-state").service(mutable_counter))
+            .configure(mutable_state_config)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

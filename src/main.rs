@@ -1,4 +1,5 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use serde::Deserialize;
 use std::sync::Mutex;
 
 #[get("/")]
@@ -41,24 +42,89 @@ fn mutable_state_config(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/shared-mutable-state2").service(mutable_counter));
 }
 
+#[get("/path/{user_id}/{info}")]
+async fn path_extractor(path: web::Path<(u32, String)>) -> std::io::Result<String> {
+    let (user_id, info) = path.into_inner();
+    Ok(format!("User_id: {}, info: {}.", user_id, info))
+}
+
+#[derive(Deserialize)]
+struct PathParam {
+    user_id: u32,
+    info: String,
+}
+
+#[get("/path_2/{user_id}/{info}")]
+async fn path_extractor_2(path_param: web::Path<PathParam>) -> std::io::Result<String> {
+    Ok(format!(
+        "User_id: {}, info: {}.",
+        path_param.user_id, path_param.info
+    ))
+}
+
+#[derive(Deserialize)]
+struct QueryParam {
+    username: String,
+    id: u32,
+}
+
+#[get("/query")]
+async fn query_extractor(query: web::Query<QueryParam>) -> String {
+    format!("Welcome {}: {}!", query.id, query.username)
+}
+
+#[derive(Deserialize)]
+struct JsonParam {
+    username: String,
+    id: u32,
+}
+
+#[post("/json")]
+async fn json_extractor(json: web::Json<JsonParam>) -> std::io::Result<String> {
+    Ok(format!("Welcome {}: {}!", json.id, json.username))
+}
+
+#[derive(Deserialize)]
+struct FormData {
+    username: String,
+    id: u32,
+}
+
+#[post("/form")]
+async fn url_encoded_form_extractor(form: web::Form<FormData>) -> std::io::Result<String> {
+    Ok(format!("Welcome {}: {}!", form.id, form.username))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let counter = web::Data::new(MutableState {
         counter: Mutex::new(0),
     });
 
+    let json_config = web::JsonConfig::default().limit(4096); // This limits the payload below 4KB.;
+
+    // move is needed to use counter. Maybe to share the state across threads?
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
                 app_name: String::from("Actix Web"),
             }))
             .app_data(counter.clone())
+            .app_data(json_config.clone())
             .service(index)
             .service(hello)
             .service(web::scope("/app").service(echo))
             .route("/hey", web::get().to(manual_hello))
             .service(web::scope("/shared-mutable-state").service(mutable_counter))
             .configure(mutable_state_config)
+            .service(
+                web::scope("/extractors")
+                    .service(path_extractor)
+                    .service(path_extractor_2)
+                    .service(query_extractor)
+                    .service(json_extractor)
+                    .service(url_encoded_form_extractor),
+            )
     })
     .bind(("127.0.0.1", 8080))?
     .run()

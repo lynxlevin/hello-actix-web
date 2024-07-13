@@ -1,7 +1,8 @@
 use crate::diesel_code::schema::todos;
 use diesel::prelude::*;
+use serde::Serialize;
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = todos)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Todo {

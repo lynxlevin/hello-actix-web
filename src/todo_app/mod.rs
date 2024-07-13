@@ -1,4 +1,4 @@
-use actix_web::{post, web};
+use actix_web::{post, web, Responder, Result};
 use serde::Deserialize;
 
 use crate::diesel_code::{create_todo, establish_connection};
@@ -8,19 +8,16 @@ pub fn todo_app_config(cfg: &mut web::ServiceConfig) {
 }
 
 #[derive(Deserialize)]
-struct JsonParam {
+struct NewTodoRequest {
     title: String,
     description: String,
 }
 
 #[post("")]
-async fn create(json: web::Json<JsonParam>) -> std::io::Result<String> {
+async fn create(json: web::Json<NewTodoRequest>) -> Result<impl Responder> {
     let connection = &mut establish_connection();
 
     let todo = create_todo(connection, &json.title, &json.description);
 
-    Ok(format!(
-        "Created! id: {}, title: {}, description: {}",
-        todo.id, todo.title, todo.description
-    ))
+    Ok(web::Json(todo))
 }

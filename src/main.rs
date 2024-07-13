@@ -1,6 +1,7 @@
 mod diesel_code;
 mod extractors;
 mod shared_states;
+mod todo_app;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use std::{cell::Cell, sync::atomic::AtomicUsize, sync::Arc, sync::Mutex};
 
@@ -46,6 +47,7 @@ async fn main() -> std::io::Result<()> {
             .route("/hey", web::get().to(manual_hello))
             .configure(shared_states::shared_states_config)
             .configure(extractors::extractors_config)
+            .configure(todo_app::todo_app_config)
     })
     .bind(("127.0.0.1", 8080))?
     .run()

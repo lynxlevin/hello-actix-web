@@ -1,3 +1,4 @@
+mod diesel_code;
 mod extractors;
 mod shared_states;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
